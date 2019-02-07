@@ -17,6 +17,12 @@
 import Foundation
 
 extension String {
+
+    func equalsLowercased(_ aString: String) -> Bool {
+        assert(aString == aString.lowercased(), "equalsLowercased() should be passed a lowercased string, not '\(aString)'")
+        return self.lowercased() == aString
+    }
+
     /// Trims space and tab characters from the start and end of a string.
     func trimAsciiWhitespace() -> String {
         return String(self.drop {
@@ -129,6 +135,8 @@ func usage() {
     print("  -m, --method n: method of conversion:")
     print("          1 = equality: Foundation caseInsensitiveCompare")
     print("          2 = equality: Stdlib lowercased")
+    print("          101 = non-equality: Foundation caseInsensitiveCompare")
+    print("          102 = non-equality: Stdlib lowercased")
     print("          3 = trimming: Foundation trimmingCharacters(in: .whitespaces)")
     print("          4 = trimming: Stdlib drop/reverse/drop/reverse")
     print("          5 = trimming: Stdlib drop/repeat to discover last index")
@@ -213,12 +221,14 @@ var RUNNING = true
 func code(block: Int, loops: Int) -> () -> Void {
     return {
         let lSTRING = STRINGS[block-1]
+        let checkLowerCase = lSTRING.lowercased()
+        let checkDifferent = "x" + checkLowerCase
         var result: Bool = false
         var resultStr: String = ""
         switch METHOD {
         case 1:
             for _ in 1...EFFORT {
-                result = lSTRING.caseInsensitiveCompare("Accept") == .orderedSame
+                result = lSTRING.caseInsensitiveCompare(checkLowerCase) == .orderedSame
                 if !result {
                     print("Error - compare failed")
                     return
@@ -226,9 +236,25 @@ func code(block: Int, loops: Int) -> () -> Void {
             }
         case 2:
             for _ in 1...EFFORT {
-                result = lSTRING.lowercased() == "accept"
+                result = lSTRING.equalsLowercased(checkLowerCase)
                 if !result {
                     print("Error - compare failed")
+                    return
+                }
+           }
+        case 101:
+            for _ in 1...EFFORT {
+                result = lSTRING.caseInsensitiveCompare(checkDifferent) == .orderedSame
+                if result {
+                    print("Error - compare succeeded")
+                    return
+                }
+            }
+        case 102:
+            for _ in 1...EFFORT {
+                result = lSTRING.equalsLowercased(checkDifferent)
+                if result {
+                    print("Error - compare succeeded")
                     return
                 }
            }
@@ -258,28 +284,22 @@ func code(block: Int, loops: Int) -> () -> Void {
                 resultStr = lSTRING
                 resultStr.trimAsciiWhitespace5()
             }
-//        case 7:
-//            for _ in 1...EFFORT {
-//                resultStr = String(lSTRING.dropFirst().dropLast())
-//            }
-//        case 8:
-//            for _ in 1...EFFORT {
-//                resultStr = lSTRING
-//                resultStr.remove(at: resultStr.startIndex)
-//                resultStr.remove(at: resultStr.index(before: resultStr.endIndex))
-//            }
        default:
             print("Error - unknown method \(METHOD)")
             return
         }
         // Compare to reference impl
-        if resultStr != lSTRING.trimmingCharacters(in: .whitespaces) {
-            print("FAILED trimming: '\(resultStr)'")
-            return
+        switch METHOD {
+        case 1,2,101,102:
+            break
+        case 3,4,5,6,7,8:
+            if resultStr != lSTRING.trimmingCharacters(in: .whitespaces) {
+                print("FAILED trimming: '\(resultStr)'")
+                return
+            }
+        default:
+            print("Unexpected method")
         }
-//        if resultStr != String(lSTRING.dropFirst().dropLast()) {
-//            print("FAILED - not equivalent")
-//        }
 
         if DEBUG && loops == 1 {
             print("Instance \(block) done")
