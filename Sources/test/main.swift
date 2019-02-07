@@ -41,6 +41,10 @@ extension String {
             char in
             return char == " " || char == "\u{0009}"
         }
+        // Early exit if resulting string is now empty
+        guard !trimmedPrefix.isEmpty else {
+            return ""
+        }
         // (hopefully) faster way to trim whitespace from the end of a string
         let startIndex = trimmedPrefix.startIndex
         var endIndex = trimmedPrefix.endIndex
